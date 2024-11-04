@@ -1,40 +1,38 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import type { FormEvent } from "react"
+import { Amplify } from "aws-amplify"
+import { signUp } from "aws-amplify/auth"
+import outputs from "../amplify_outputs.json"
 
-const client = generateClient<Schema>();
+Amplify.configure(outputs)
 
-function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+interface SignUpFormElements extends HTMLFormControlsCollection {
+  email: HTMLInputElement
+  password: HTMLInputElement
+}
 
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
+interface SignUpForm extends HTMLFormElement {
+  readonly elements: SignUpFormElements
+}
 
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+export default function App() {
+  async function handleSubmit(event: FormEvent<SignUpForm>) {
+    event.preventDefault()
+    const form = event.currentTarget
+    // ... validate inputs
+    await signUp({
+      username: form.elements.email.value,
+      password: form.elements.password.value,
+    })
   }
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-    </main>
-  );
+    <form onSubmit={handleSubmit}>
+      <label htmlFor="email">Email:</label>
+      <input type="text" id="email" name="email" />
+      <label htmlFor="password">Password:</label>
+      <input type="password" id="password" name="password" />
+      <input type="submit" />
+    </form>
+  )
 }
 
-export default App;
